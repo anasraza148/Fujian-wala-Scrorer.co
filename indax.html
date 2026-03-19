@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Cricket Live Overlay Pro</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAANBBdEWc1jPQurxVLsMjzhvfYQScyK8s",
+            authDomain: "cricketoverlay-78b11.firebaseapp.com",
+            projectId: "cricketoverlay-78b11",
+            storageBucket: "cricketoverlay-78b11.firebasestorage.app",
+            messagingSenderId: "967246815015",
+            appId: "1:967246815015:web:496750f435ffe158da1302",
+            databaseURL: "https://cricketoverlay-78b11-default-rtdb.firebaseio.com"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const gameRef = ref(db, 'liveGame');
+
+        let lastWicket = -1;
+        let lastRuns = -1;
+
+        // --- Firebase Listener: Ye live data pakarta hai ---
+        onValue(gameRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // Animation Logic (Out, Four, Six)
+                if (lastWicket !== -1 && data.wickets > lastWicket) showAnim('out-anim');
+                if (lastRuns !== -1 && data.totalRuns > lastRuns) {
+                    let diff = data.totalRuns - lastRuns;
+                    if (diff === 4) showAnim('four-anim');
+                    if (diff === 6) showAnim('six-anim');
+                }
+
+                lastWicket = data.wickets;
+                lastRuns = data.totalRuns;
+
+                // UI Updates
+                document.getElementById('t1-name').innerText = data.t1;
+                document.getElementById('t2-name').innerText = data.t2;
+                document.getElementById('total-score').innerText = data.totalRuns + "/" + data.wickets;
+                document.getElementById('overs-count').innerText = data.bowlOvs;
+                document.getElementById('display-extra-info').innerText = data.location ? "LIVE FROM " + data.location.toUpperCase() : "LIVE MATCH UPDATES";
+                
+                document.getElementById('bat1-name').innerText = data.b1n.toUpperCase();
+                document.getElementById('bat1-runs').innerText = data.b1r;
+                document.getElementById('bat1-balls').innerText = data.b1b;
+                document.getElementById('bat2-name').innerText = data.b2n.toUpperCase();
+                document.getElementById('bat2-runs').innerText = data.b2r;
+                document.getElementById('bat2-balls').innerText = data.b2b;
+                document.getElementById('bowl-name').innerText = data.bowlName.toUpperCase();
+                document.getElementById('b-runs').innerText = data.bowlRuns;
+                document.getElementById('b-wkts').innerText = data.bowlWkts;
+                document.getElementById('b-overs').innerText = data.bowlOvs;
+
+                // Recent Balls History
+                const hist = document.getElementById('over-balls');
+                hist.innerHTML = '';
+                if(data.recentBalls) {
+                    data.recentBalls.slice(-6).forEach(b => {
+                        const s = document.createElement('span');
+                        s.innerText = b;
+                        if(['6','W','Nb','Wd'].includes(b.toString())) { 
+                            s.style.color="red"; 
+                            s.style.borderColor="red"; 
+                        }
+                        hist.appendChild(s);
+                    });
+                }
+            }
+        });
+
+        function showAnim(id) {
+            const el = document.getElementById(id);
+            if(el) {
+                el.style.display = "flex";
+                setTimeout(() => { el.style.display = "none"; }, 2500);
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div class="out-overlay" id="out-anim">
+        <div class="out-box"><span class="out-text">OUT</span><div class="out-line"></div></div>
+    </div>
+
+    <div class="boundary-overlay" id="four-anim"><div class="boundary-text four">FOUR</div></div>
+    <div class="boundary-overlay" id="six-anim"><div class="boundary-text six">SIX</div></div>
+
+    <div class="overlay-wrapper">
+        <div class="main-scoreboard">
+            <div class="box batsmen-box">
+                <div class="player-row">
+                    <span class="indicator">▶</span>
+                    <span class="name" id="bat1-name">PLAYER 1</span>
+                    <span class="stats"><span id="bat1-runs">0</span> <span class="balls">(<span id="bat1-balls">0</span>)</span></span>
+                </div>
+                <div class="player-row">
+                    <span class="indicator" style="visibility:hidden">▶</span>
+                    <span class="name" id="bat2-name">PLAYER 2</span>
+                    <span class="stats"><span id="bat2-runs">0</span> <span class="balls">(<span id="bat2-balls">0</span>)</span></span>
+                </div>
+            </div>
+
+            <div class="box score-box">
+                <div class="team-names">
+                    <span id="t1-name">TEAM 1</span> <span class="vs">v</span> <span id="t2-name" class="bold">TEAM 2</span>
+                </div>
+                <div class="main-total-row">
+                    <span class="score" id="total-score">0/0</span>
+                    <div class="overs-indicator">
+                        <span class="label">Ove:</span>
+                        <span id="overs-count">0.0</span>
+                    </div>
+                </div>
+                <div class="tournament-line" id="display-extra-info">LIVE MATCH UPDATES</div>
+            </div>
+
+            <div class="box bowler-box">
+                <div class="bowler-top">
+                    <span class="name" id="bowl-name">BOWLER</span>
+                    <span class="bowl-stats"><span id="b-runs">0</span>-<span id="b-wkts">0</span> <span class="b-ovs" id="b-overs">0.0</span></span>
+                </div>
+                <div class="ball-history" id="over-balls"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
