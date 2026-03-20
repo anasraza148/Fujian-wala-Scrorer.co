@@ -11,13 +11,23 @@
             height: 100vh; overflow: hidden; color: white;
         }
 
+        /* MASTER WRAPPER FOR FADE EFFECT */
+        #master-wrapper-v2 {
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            opacity: 0;
+            visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
         .score-bar {
             display: flex; align-items: center;
-            /* PATTI KI POSITION AB YEHAN SE CONTROL HOGI */
             position: fixed;
-            bottom: 10%; /* Patti ko 10% upar utha diya hai, pehle ye 25px tha */
+            bottom: 10%; 
             filter: drop-shadow(0 4px 10px rgba(0,0,0,0.7));
-            z-index: 100; /* Patti sab se upar rahe */
+            z-index: 100;
         }
 
         .segment {
@@ -62,60 +72,76 @@
             font-size: 14px; font-weight: bold; text-transform: uppercase;
             letter-spacing: 1px; display: none;
             justify-content: center; border-radius: 5px 5px 0 0;
-             position: fixed;
-    bottom: calc(10% + 50px);
-            animation: slideUp 0.5s ease-out;
+            position: fixed;
+            bottom: calc(10% + 50px);
         }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        #overlay-wrapper {
-    opacity: 0;
-    transition: opacity 0.6s ease-in-out;
-}
+                /* ANIMATION BOX STYLING */
+        .big-anim {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; justify-content: center; align-items: center;
+            z-index: 2000; font-size: 150px; font-weight: 900;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.1); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .six-bg { background: rgba(255, 0, 119, 0.85); color: white; }
+        .four-bg { background: rgba(0, 172, 193, 0.85); color: white; }
+        .out-bg { background: rgba(179, 0, 0, 0.85); color: white; }
 
     </style>
 </head>
 <body>
+    <div id="anim-six" class="big-anim six-bg">SIX</div>
+    <div id="anim-four" class="big-anim four-bg">FOUR</div>
+    <div id="anim-out" class="big-anim out-bg">OUT</div>
 
-    <div id="ticker-box">
-        <span id="ticker-text"></span>
-    </div>
-
-    <div class="score-bar">
-        <div class="segment red-box team-l" id="t1">---</div>
-
-        <div class="segment red-box bat-box">
-            <div style="display:flex; flex-direction:column;">
-                <span class="p-name" id="b1n">---</span>
-                <div><span class="p-score" id="b1r">0</span><span class="p-balls">(<span id="b1b">0</span>)</span></div>
-            </div>
-            <span style="font-size:12px; margin-left:5px;">▶</span>
+    <div id="master-wrapper-v2">
+        <div id="ticker-box">
+            <span id="ticker-text"></span>
         </div>
 
-        <div class="segment red-box bat-box" style="min-width:90px;">
-            <div style="display:flex; flex-direction:column;">
-                <span class="p-name" id="b2n" style="opacity:0.8;">---</span>
-                <div>
-                    <span class="p-score" id="b2r" style="opacity:0.8;">0</span>
-                    <span class="p-balls" style="opacity:0.8;">(<span id="b2b">0</span>)</span>
+        <div class="score-bar">
+            <div class="segment red-box team-l" id="t1">---</div>
+
+            <div class="segment red-box bat-box">
+                <div style="display:flex; flex-direction:column;">
+                    <span class="p-name" id="b1n">---</span>
+                    <div><span class="p-score" id="b1r">0</span><span class="p-balls">(<span id="b1b">0</span>)</span></div>
+                </div>
+                <span style="font-size:12px; margin-left:5px;">▶</span>
+            </div>
+
+            <div class="segment red-box bat-box" style="min-width:90px;">
+                <div style="display:flex; flex-direction:column;">
+                    <span class="p-name" id="b2n" style="opacity:0.8;">---</span>
+                    <div>
+                        <span class="p-score" id="b2r" style="opacity:0.8;">0</span>
+                        <span class="p-balls" style="opacity:0.8;">(<span id="b2b">0</span>)</span>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="segment center-score">
-            <div class="main-runs"><span id="totalRuns">0</span>-<span id="wickets">0</span></div>
-            <div class="sub-text"><span id="bowlOvs">0.0</span> (<span id="ballsInOver">0</span>)</div>
-            <div style="font-size:6.5px; font-weight:bold;" id="matchLocDisplay">LIVE</div>
-        </div>
-
-        <div class="segment blue-box">
-            <div style="display:flex; flex-direction:column; justify-content: center;">
-                <span class="p-name" id="bowlName" style="color:#00d9ff; font-size: 10px;">---</span>
-                <div class="ball-row" id="recentBalls"></div>
+            <div class="segment center-score">
+                <div class="main-runs"><span id="totalRuns">0</span>-<span id="wickets">0</span></div>
+                <div class="sub-text"><span id="bowlOvs">0.0</span></div>
+                <div style="font-size:6.5px; font-weight:bold;" id="matchLocDisplay">LIVE</div>
             </div>
-            <div style="font-size:16px; font-weight:900;"><span id="bowlWkts">0</span>-<span id="bowlRuns">0</span></div>
-        </div>
 
-        <div class="segment team-r" id="t2">---</div>
+            <div class="segment blue-box">
+                <div style="display:flex; flex-direction:column; justify-content: center;">
+                    <span class="p-name" id="bowlName" style="color:#00d9ff; font-size: 10px;">---</span>
+                    <div class="ball-row" id="recentBalls"></div>
+                </div>
+                <div style="font-size:16px; font-weight:900;"><span id="bowlWkts">0</span>-<span id="bowlRuns">0</span></div>
+            </div>
+
+            <div class="segment team-r" id="t2">---</div>
+        </div>
     </div>
 
     <script type="module">
@@ -136,9 +162,40 @@
         const db = getDatabase(app);
         const gameRef = ref(db, 'liveGame');
 
+        let lastRuns = -1;
+        let lastWickets = -1;
+
+        function triggerAnimation(id) {
+            const el = document.getElementById(id);
+            el.style.display = 'flex';
+            setTimeout(() => { el.style.display = 'none'; }, 3000); // 3 sec baad gayab
+        }
+
         onValue(gameRef, (snapshot) => {
             const data = snapshot.val();
             if (data) {
+                                // --- ANIMATION LOGIC ---
+                if (lastRuns !== -1 && data.totalRuns > lastRuns) {
+                    let izafa = data.totalRuns - lastRuns;
+                    if (izafa === 6) triggerAnimation('anim-six');
+                    if (izafa === 4) triggerAnimation('anim-four');
+                }
+                if (lastWickets !== -1 && data.wickets > lastWickets) {
+                    triggerAnimation('anim-out');
+                }
+                lastRuns = data.totalRuns;
+                lastWickets = data.wickets;
+
+                // --- SWITCH LOGIC: Sirf V2 (Number 2) par show ho ---
+                const wrapper = document.getElementById('master-wrapper-v2');
+                if (data.showOverlay === true && data.activeOverlay === 2) {
+                    wrapper.style.opacity = "1";
+                    wrapper.style.visibility = "visible";
+                } else {
+                    wrapper.style.opacity = "0";
+                    wrapper.style.visibility = "hidden";
+                }
+
                 document.getElementById('t1').innerText = data.t1 || "---";
                 document.getElementById('t2').innerText = data.t2 || "---";
                 document.getElementById('b1n').innerText = data.b1n || "---";
@@ -150,7 +207,6 @@
                 document.getElementById('totalRuns').innerText = data.totalRuns || "0";
                 document.getElementById('wickets').innerText = data.wickets || "0";
                 document.getElementById('bowlOvs').innerText = data.bowlOvs || "0.0";
-                document.getElementById('ballsInOver').innerText = data.ballsInOver || "0";
                 document.getElementById('bowlName').innerText = data.bowlName || "---";
                 document.getElementById('bowlRuns').innerText = data.bowlRuns || "0";
                 document.getElementById('bowlWkts').innerText = data.bowlWkts || "0";
@@ -180,16 +236,6 @@
                 }
             }
         });
-        
-        const wrapper = document.getElementById('overlay-wrapper');
-// Agar showOverlay true ho AUR activeOverlay ka number 2 ho
-if (data.showOverlay === true && data.activeOverlay === 2) {
-    wrapper.style.opacity = "1";
-} else {
-    wrapper.style.opacity = "0";
-}
-
-
     </script>
 </body>
 </html>
