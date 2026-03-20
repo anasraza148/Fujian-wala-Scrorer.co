@@ -137,7 +137,11 @@
                     <span class="p-name" id="bowlName" style="color:#00d9ff; font-size: 10px;">---</span>
                     <div class="ball-row" id="recentBalls"></div>
                 </div>
-                <div style="font-size:16px; font-weight:900;"><span id="bowlWkts">0</span>-<span id="bowlRuns">0</span></div>
+                <div style="font-size:16px; font-weight:900;">
+    <span id="bowlWkts">0</span>-<span id="bowlRuns">0</span>
+    <span id="individualBowlOvs" style="font-size:10px; color: #00d9ff; margin-left: 5px;">(0.0)</span>
+</div>
+
             </div>
 
             <div class="segment team-r" id="t2">---</div>
@@ -206,9 +210,11 @@
                 document.getElementById('b2b').innerText = data.b2b || "0";
                 document.getElementById('totalRuns').innerText = data.totalRuns || "0";
                 document.getElementById('wickets').innerText = data.wickets || "0";
-                document.getElementById('bowlOvs').innerText = data.bowlOvs || "0.0";
+                document.getElementById('bowlOvs').innerText = data.totalMatchOvers || "0.0";
                 document.getElementById('bowlName').innerText = data.bowlName || "---";
                 document.getElementById('bowlRuns').innerText = data.bowlRuns || "0";
+                document.getElementById('individualBowlOvs').innerText = "(" + (data.bowlOvs || "0.0") + ")";
+
                 document.getElementById('bowlWkts').innerText = data.bowlWkts || "0";
                 document.getElementById('matchLocDisplay').innerText = "LIVE FROM " + (data.location || "OKARA");
 
