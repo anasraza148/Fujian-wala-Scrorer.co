@@ -29,53 +29,67 @@
 
         // --- Firebase Listener: Ye live data pakarta hai ---
         onValue(gameRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                // Animation Logic (Out, Four, Six)
-                if (lastWicket !== -1 && data.wickets > lastWicket) showAnim('out-anim');
-                if (lastRuns !== -1 && data.totalRuns > lastRuns) {
-                    let diff = data.totalRuns - lastRuns;
-                    if (diff === 4) showAnim('four-anim');
-                    if (diff === 6) showAnim('six-anim');
-                }
+    const data = snapshot.val();
+    if (data) {
+        // --- 1. Teams & Main Score (Purana Code) ---
+        document.getElementById('t1-name').innerText = data.t1;
+        document.getElementById('t2-name').innerText = data.t2;
+        document.getElementById('total-score').innerText = data.totalRuns + "/" + data.wickets;
+        document.getElementById('overs-count').innerText = data.bowlOvs;
 
-                lastWicket = data.wickets;
-                lastRuns = data.totalRuns;
+        // --- 2. Batsmen & Bowler (Purana Code) ---
+        document.getElementById('bat1-name').innerText = data.b1n.toUpperCase();
+        document.getElementById('bat1-runs').innerText = data.b1r;
+        document.getElementById('bat1-balls').innerText = data.b1b;
+        document.getElementById('bat2-name').innerText = data.b2n.toUpperCase();
+        document.getElementById('bat2-runs').innerText = data.b2r;
+        document.getElementById('bat2-balls').innerText = data.b2b;
+        document.getElementById('bowl-name').innerText = data.bowlName.toUpperCase();
+        document.getElementById('b-runs').innerText = data.bowlRuns;
+        document.getElementById('b-wkts').innerText = data.bowlWkts;
+        document.getElementById('b-overs').innerText = data.bowlOvs;
 
-                // UI Updates
-                document.getElementById('t1-name').innerText = data.t1;
-                document.getElementById('t2-name').innerText = data.t2;
-                document.getElementById('total-score').innerText = data.totalRuns + "/" + data.wickets;
-                document.getElementById('overs-count').innerText = data.bowlOvs;
-                document.getElementById('display-extra-info').innerText = data.location ? "LIVE FROM " + data.location.toUpperCase() : "LIVE MATCH UPDATES";
-                
-                document.getElementById('bat1-name').innerText = data.b1n.toUpperCase();
-                document.getElementById('bat1-runs').innerText = data.b1r;
-                document.getElementById('bat1-balls').innerText = data.b1b;
-                document.getElementById('bat2-name').innerText = data.b2n.toUpperCase();
-                document.getElementById('bat2-runs').innerText = data.b2r;
-                document.getElementById('bat2-balls').innerText = data.b2b;
-                document.getElementById('bowl-name').innerText = data.bowlName.toUpperCase();
-                document.getElementById('b-runs').innerText = data.bowlRuns;
-                document.getElementById('b-wkts').innerText = data.bowlWkts;
-                document.getElementById('b-overs').innerText = data.bowlOvs;
+        // --- 3. NAYA TICKER LOGIC (Yahan Galti Thi) ---
+        const tickerWrap = document.getElementById('ticker-wrap');
+        const tickerMsgElement = document.getElementById('ticker-text');
 
-                // Recent Balls History
-                const hist = document.getElementById('over-balls');
-                hist.innerHTML = '';
-                if(data.recentBalls) {
-                    data.recentBalls.slice(-6).forEach(b => {
-                        const s = document.createElement('span');
-                        s.innerText = b;
-                        if(['6','W','Nb','Wd'].includes(b.toString())) { 
-                            s.style.color="red"; 
-                            s.style.borderColor="red"; 
-                        }
-                        hist.appendChild(s);
-                    });
-                }
-            }
-        });
+        if (data.showTicker === true) {
+            tickerWrap.style.display = "flex"; // Box ko show karein
+            setTimeout(() => {
+                tickerWrap.classList.add('ticker-visible');
+                tickerWrap.classList.remove('ticker-hidden');
+            }, 10);
+            tickerMsgElement.innerText = data.tickerMsg || "LIVE MATCH";
+        } else {
+            tickerWrap.classList.add('ticker-hidden');
+            tickerWrap.classList.remove('ticker-visible');
+            // Animation khatam hone ke baad gayab karein
+            setTimeout(() => { 
+                tickerWrap.style.display = "none"; 
+            }, 500);
+        }
+
+        // Recent Balls logic
+        const ballContainer = document.getElementById('over-balls');
+        ballContainer.innerHTML = '';
+        if(data.recentBalls) {
+            data.recentBalls.forEach(b => {
+                const span = document.createElement('span');
+                span.innerText = b;
+                if(b == '6' || b == 'W') span.className = 'six';
+                ballContainer.appendChild(span);
+            });
+        }
+    }
+});
+
+const wrapper = document.getElementById('overlay-wrapper');
+// Agar showOverlay true ho AUR activeOverlay ka number 1 ho
+if (data.showOverlay === true && data.activeOverlay === 1) {
+    wrapper.style.opacity = "1";
+} else {
+    wrapper.style.opacity = "0";
+}
 
         function showAnim(id) {
             const el = document.getElementById(id);
@@ -94,6 +108,9 @@
 
     <div class="boundary-overlay" id="four-anim"><div class="boundary-text four">FOUR</div></div>
     <div class="boundary-overlay" id="six-anim"><div class="boundary-text six">SIX</div></div>
+<div id="ticker-wrap" class="ticker-hidden">
+    <div id="ticker-text">WELCOME TO LIVE CRICKET</div>
+</div>
 
     <div class="overlay-wrapper">
         <div class="main-scoreboard">
