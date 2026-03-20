@@ -56,4 +56,10 @@
             }
         }
     });
+    window.sendText = function(show) {
+    game.showTicker = show;
+    game.tickerMsg = document.getElementById('customText').value.toUpperCase();
+    save(); // Ye function aapka data Firebase par bhej dega
+};
+
 </script>
