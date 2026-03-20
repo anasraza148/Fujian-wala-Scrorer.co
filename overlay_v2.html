@@ -67,6 +67,139 @@
             animation: slideUp 0.5s ease-out;
         }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        #overlay-wrapper {
+    opacity: 0;
+    transition: opacity 0.6s ease-in-out;
+}
+
+    </style>
+</head>
+<body>
+
+    <div id="ticker-box">
+        <span id="ticker-text"></span>
+    </div>
+
+    <div class="score-bar">
+        <div class="segment red-box team-l" id="t1">---</div>
+
+        <div class="segment red-box bat-box">
+            <div style="display:flex; flex-direction:column;">
+                <span class="p-name" id="b1n">---</span>
+                <div><span class="p-score" id="b1r">0</span><span class="p-balls">(<span id="b1b">0</span>)</span></div>
+            </div>
+            <span style="font-size:12px; margin-left:5px;">▶</span>
+        </div>
+
+        <div class="segment red-box bat-box" style="min-width:90px;">
+            <div style="display:flex; flex-direction:column;">
+                <span class="p-name" id="b2n" style="opacity:0.8;">---</span>
+                <div>
+                    <span class="p-score" id="b2r" style="opacity:0.8;">0</span>
+                    <span class="p-balls" style="opacity:0.8;">(<span id="b2b">0</span>)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="segment center-score">
+            <div class="main-runs"><span id="totalRuns">0</span>-<span id="wickets">0</span></div>
+            <div class="sub-text"><span id="bowlOvs">0.0</span> (<span id="ballsInOver">0</span>)</div>
+            <div style="font-size:6.5px; font-weight:bold;" id="matchLocDisplay">LIVE</div>
+        </div>
+
+        <div class="segment blue-box">
+            <div style="display:flex; flex-direction:column; justify-content: center;">
+                <span class="p-name" id="bowlName" style="color:#00d9ff; font-size: 10px;">---</span>
+                <div class="ball-row" id="recentBalls"></div>
+            </div>
+            <div style="font-size:16px; font-weight:900;"><span id="bowlWkts">0</span>-<span id="bowlRuns">0</span></div>
+        </div>
+
+        <div class="segment team-r" id="t2">---</div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAANBBdEWc1jPQurxVLsMjzhvfYQScyK8s",
+            authDomain: "cricketoverlay-78b11.firebaseapp.com",
+            projectId: "cricketoverlay-78b11",
+            storageBucket: "cricketoverlay-78b11.firebasestorage.app",
+            messagingSenderId: "967246815015",
+            appId: "1:967246815015:web:496750f435ffe158da1302",
+            databaseURL: "https://cricketoverlay-78b11-default-rtdb.firebaseio.com"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const gameRef = ref(db, 'liveGame');
+
+        onValue(gameRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                document.getElementById('t1').innerText = data.t1 || "---";
+                document.getElementById('t2').innerText = data.t2 || "---";
+                document.getElementById('b1n').innerText = data.b1n || "---";
+                document.getElementById('b1r').innerText = data.b1r || "0";
+                document.getElementById('b1b').innerText = data.b1b || "0";
+                document.getElementById('b2n').innerText = data.b2n || "---";
+                document.getElementById('b2r').innerText = data.b2r || "0";
+                document.getElementById('b2b').innerText = data.b2b || "0";
+                document.getElementById('totalRuns').innerText = data.totalRuns || "0";
+                document.getElementById('wickets').innerText = data.wickets || "0";
+                document.getElementById('bowlOvs').innerText = data.bowlOvs || "0.0";
+                document.getElementById('ballsInOver').innerText = data.ballsInOver || "0";
+                document.getElementById('bowlName').innerText = data.bowlName || "---";
+                document.getElementById('bowlRuns').innerText = data.bowlRuns || "0";
+                document.getElementById('bowlWkts').innerText = data.bowlWkts || "0";
+                document.getElementById('matchLocDisplay').innerText = "LIVE FROM " + (data.location || "OKARA");
+
+                const tickerBox = document.getElementById('ticker-box');
+                const tickerText = document.getElementById('ticker-text');
+                if(data.showTicker) {
+                    tickerBox.style.display = 'flex';
+                    tickerText.innerText = data.tickerMsg || "";
+                } else {
+                    tickerBox.style.display = 'none';
+                }
+
+                const ballContainer = document.getElementById('recentBalls');
+                ballContainer.innerHTML = '';
+                if(data.recentBalls) {
+                    const ballsArray = Array.isArray(data.recentBalls) ? data.recentBalls : Object.values(data.recentBalls);
+                    ballsArray.slice(-6).forEach(b => {
+                        const d = document.createElement('div');
+                        d.className = 'ball';
+                        if(b == '6') d.style.background = '#ffd700';
+                        if(b == 'W' || b == 'w') { d.style.background = '#f00'; d.style.color = '#fff'; }
+                        d.innerText = b;
+                        ballContainer.appendChild(d);
+                    });
+                }
+            }
+        });
+        
+        const wrapper = document.getElementById('overlay-wrapper');
+// Agar showOverlay true ho AUR activeOverlay ka number 2 ho
+if (data.showOverlay === true && data.activeOverlay === 2) {
+    wrapper.style.opacity = "1";
+} else {
+    wrapper.style.opacity = "0";
+}
+
+
+    </script>
+</body>
+</html>
+            letter-spacing: 1px; display: none;
+            justify-content: center; border-radius: 5px 5px 0 0;
+             position: fixed;
+    bottom: calc(10% + 50px);
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     </style>
 </head>
 <body>
