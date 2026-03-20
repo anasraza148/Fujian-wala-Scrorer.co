@@ -83,19 +83,29 @@
     <div class="card">
         <label>Match Setup & Location</label>
         <div style="display:flex; justify-content:space-between;">
-            <input type="text" id="t1" value="EUG">
-            <input type="text" id="t2" value="BLA">
+            <input type="text" id="t1" value="SIDHU CHAK">
+            <input type="text" id="t2" value="FUJIAN WALA">
         </div>
         <input type="text" id="matchLoc" class="full-input" value="OKARA">
         <button class="update-btn" onclick="syncNames()">UPDATE TEAMS & LOCATION</button>
     </div>
 
     <div class="card">
-        <label>Current Action (Bowler: <span id="current-bowl-name" style="color:#00acc1; font-weight:bold;">SHANKAR</span>)</label>
+        <label>Current Action (Bowler: <span id="current-bowl-name" style="color:#00acc1; font-weight:bold;">ANAS</span>)</label>
         <div style="display:flex; justify-content: space-around; margin-bottom:10px;">
-            <input type="text" id="b1" value="ARUP" placeholder="Striker">
-            <input type="text" id="b2" value="RAJIB" placeholder="Non-Striker">
+            <input type="text" id="b1" value="ASIF" placeholder="Striker">
+            <input type="text" id="b2" value="AHMAD" placeholder="Non-Striker">
         </div>
+        <div class="card">
+    <label>Custom Overlay Text (Ticker)</label>
+    <input type="text" id="customText" class="full-input" placeholder="Enter news or message here...">
+    <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="update-btn" style="background: #4caf50;" onclick="sendText(true)">SHOW TEXT</button>
+        <button class="update-btn" style="background: #f44336;" onclick="sendText(false)">HIDE TEXT</button>
+    </div>
+</div>
+
+        
         <div class="btn-group">
             <button class="run-btn" onclick="processBall(0, 'reg')">0</button>
             <button class="run-btn" onclick="processBall(1, 'reg')">1</button>
@@ -123,15 +133,28 @@
             <tbody id="history-body"></tbody>
         </table>
     </div>
+<div class="card" style="margin-top: 20px; border-top: 4px solid #ff0077; background: #1a1a1a; padding: 15px; border-radius: 10px;">
+    <h3 style="color: #00d9ff; font-size: 16px; margin-bottom: 15px; text-align: center;">LIVE BROADCAST PANEL</h3>
+    
+    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <button onclick="activateOverlay(1)" style="flex: 1; background: linear-gradient(to bottom, #2196F3, #1976D2); color: white; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">PLAY V1 </button>
+        <button onclick="activateOverlay(2)" style="flex: 1; background: linear-gradient(to bottom, #E91E63, #C2185B); color: white; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">PLAY V2 </button>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+        <button onclick="hideOverlay()" style="flex: 1; background: #444; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">HIDE OVERLAY</button>
+        <button onclick="fullResetMatch()" style="flex: 1; background: #d32f2f; color: white; padding: 10px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;"> RESET MATCH</button>
+    </div>
+</div>
 
     <script>
         // Game Object aur Functions (Aapke original logic ke sath)
         let game = {
-            t1: "EUG", t2: "BLA", totalRuns: 0, wickets: 0, overs: 0, ballsInOver: 0,
-            b1n: "ARUP", b1r: 0, b1b: 0, b2n: "RAJIB", b2r: 0, b2b: 0,
+            t1: "FUJIAN WALA", t2: "SIDHU CHAK", totalRuns: 0, wickets: 0, overs: 0, ballsInOver: 0,
+            b1n: "ASIF", b1r: 0, b1b: 0, b2n: "ALI", b2r: 0, b2b: 0,
             location: "OKARA", recentBalls: [],
-            bowlName: "SHANKAR", bowlRuns: 0, bowlWkts: 0, bowlBalls: 0, bowlOvs: "0.0",
-            bowlersDB: { "SHANKAR": { r:0, w:0, b:0 } }
+            bowlName: "ANAS", bowlRuns: 0, bowlWkts: 0, bowlBalls: 0, bowlOvs: "0.0",
+            bowlersDB: { "ANAS": { r:0, w:0, b:0 } }
         };
         
         let history = [];
@@ -197,6 +220,114 @@
         window.handleOverEnd = function() {
             game.bowlersDB[game.bowlName] = { r: game.bowlRuns, w: game.bowlWkts, b: game.bowlBalls };
             let nextBowl = prompt("Over End! Next Bowler Name?", "");
+            if (nextBowl) {
+                nextBowl = nextBowl.toUpperCase();
+                game.bowlName = nextBowl;
+                if (game.bowlersDB[nextBowl]) {
+                    game.bowlRuns = game.bowlersDB[nextBowl].r;
+                    game.bowlWkts = game.bowlersDB[nextBowl].w;
+                    game.bowlBalls = game.bowlersDB[nextBowl].b;
+                } else {
+                    game.bowlRuns = 0; game.bowlWkts = 0; game.bowlBalls = 0;
+                }
+                game.ballsInOver = 0;
+                game.recentBalls = [];
+                strikeSwitch();
+                updateBowlStats();
+                updateHistoryTable();
+                updateLiveDisplay();
+                save();
+            }
+        };
+
+        window.rotateStrike = function() { saveHistory(); strikeSwitch(); updateLiveDisplay(); save(); };
+        window.undoLast = function() { 
+            if(history.length > 0) { 
+                game = JSON.parse(history.pop()); 
+                updateHistoryTable(); updateLiveDisplay(); save(); 
+            } 
+        };
+        window.askExtra = function(type) {
+            let val = prompt(`Runs on this Extra?`, "1");
+            if (val !== null) processBall(parseInt(val), type);
+        };
+
+        function strikeSwitch() {
+            let temp = {n: game.b1n, r: game.b1r, b: game.b1b};
+            game.b1n = game.b2n; game.b1r = game.b2r; game.b1b = game.b2b;
+            game.b2n = temp.n; game.b2r = temp.r; game.b2b = temp.b;
+        }
+
+        function updateBowlStats() { game.bowlOvs = Math.floor(game.bowlBalls / 6) + "." + (game.bowlBalls % 6); }
+        function saveHistory() { history.push(JSON.stringify(game)); if(history.length > 10) history.shift(); }
+
+        window.updateHistoryTable = function() {
+            game.bowlersDB[game.bowlName] = { r: game.bowlRuns, w: game.bowlWkts, b: game.bowlBalls };
+            let html = "";
+            for (let name in game.bowlersDB) {
+                let b = game.bowlersDB[name];
+                let ovs = Math.floor(b.b / 6) + "." + (b.b % 6);
+                html += `<tr><td>${name}</td><td>${ovs}</td><td>${b.r}</td><td>${b.w}</td></tr>`;
+            }
+            document.getElementById('history-body').innerHTML = html;
+        };
+        // Ye function data ko Firebase aur LocalStorage dono jagah bhejega
+window.save = function() { 
+    // Phone memory mein save (Backup)
+    localStorage.setItem('cricketScore', JSON.stringify(game)); 
+
+    // Firebase Online sync
+    if (window.gameRef && window.firebaseSet) {
+        window.firebaseSet(window.gameRef, game);
+        console.log("Data Synced to Firebase!");
+    }
+};
+
+window.sendText = function(show) {
+    const inputField = document.getElementById('customText');
+    if (inputField) {
+        game.tickerMsg = inputField.value.toUpperCase();
+        game.showTicker = show;
+        
+        // Data ko foran save aur send karne ke liye
+        save(); 
+        
+        if(show) {
+            alert("Text Sent: " + game.tickerMsg); // Testing ke liye
+        } else {
+            alert("Ticker Hidden");
+        }
+    } else {
+        console.error("Input field 'customText' hide!");
+    }
+};
+window.activateOverlay = function(v) {
+    game.activeOverlay = v; // 1 ya 2 set karega
+    game.showOverlay = true; 
+    save(); // Firebase mein bhej dega
+    alert("Overlay " + v + " now live.");
+};
+
+window.hideOverlay = function() {
+    game.showOverlay = false;
+    save();
+};
+
+window.fullResetMatch = function() {
+    if(confirm("confirm reset?")) {
+        game.totalRuns = 0; game.wickets = 0; game.overs = 0; game.ballsInOver = 0;
+        game.b1r = 0; game.b1b = 0; game.b2r = 0; game.b2b = 0;
+        game.recentBalls = []; game.bowlRuns = 0; game.bowlWkts = 0;
+        game.showOverlay = false;
+        save();
+        location.reload(); // Page refresh takay sab clear ho jaye
+    }
+};
+
+    </script>
+</body>
+</html>
+tBowl = prompt("Over End! Next Bowler Name?", "");
             if (nextBowl) {
                 nextBowl = nextBowl.toUpperCase();
                 game.bowlName = nextBowl;
