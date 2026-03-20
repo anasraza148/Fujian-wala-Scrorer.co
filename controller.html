@@ -22,23 +22,23 @@
     const db = getDatabase(app);
     const gameRef = ref(db, 'liveGame');
 
-    // YE DO LINES LIKHNA ZAROORI HAIN:
     window.gameRef = gameRef;
     window.firebaseSet = set; 
-    // Page load pe Firebase se latest score uthana
+
     onValue(gameRef, (snapshot) => {
         const data = snapshot.val();
-        if (data && typeof updateLiveDisplay === 'function') {
-            // Note: 'game' variable ko update karne ke liye usey global hona chahiye
-            // Lekin abhi ke liye ye aapke buttons ko live rakhega
+        if (data) {
+            document.getElementById('live-total-score').innerText = data.totalRuns + "/" + data.wickets;
+            document.getElementById('live-overs').innerText = "Ovs: " + data.bowlOvs;
+            document.getElementById('current-bowl-name').innerText = data.bowlName || "---";
+            // Update batting labels
+            document.getElementById('live-bat1').innerText = (data.b1n || "P1") + ": " + (data.b1r || 0) + "(" + (data.b1b || 0) + ")";
+            document.getElementById('live-bat2').innerText = (data.b2n || "P2") + ": " + (data.b2r || 0) + "(" + (data.b2b || 0) + ")";
         }
     });
-
-    console.log("Firebase Ready!");
-</script>
+    </script>
 
     <style>
-        /* Aapka purana CSS bilkul waisa hi rahega */
         body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .card { background: #1e1e1e; padding: 20px; margin-bottom: 15px; border-radius: 12px; width: 100%; max-width: 650px; border-top: 4px solid #00acc1; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .live-status { background: #00acc1; color: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: flex; justify-content: space-around; align-items: center; width: 100%; max-width: 650px; gap: 10px; }
@@ -59,53 +59,58 @@
         th, td { padding: 10px; border: 1px solid #444; text-align: center; font-size: 13px; }
         th { background: #333; color: #00acc1; }
         label { display: block; font-size: 11px; color: #888; text-transform: uppercase; margin-top: 8px; }
+
+        /* MODAL POPUP STYLING */
+        #bowlerModal {
+            display: none; position: fixed; z-index: 5000; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.9); justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #1e1e1e; padding: 30px; border-radius: 15px; border: 2px solid #00acc1;
+            width: 300px; text-align: center;
+        }
     </style>
 </head>
 <body>
+
+    <div id="bowlerModal">
+        <div class="modal-content">
+            <h2 style="color:#00acc1; margin-top:0;">OVER COMPLETE!</h2>
+            <p>Enter Next Bowler Name:</p>
+            <input type="text" id="nextBowlInput" placeholder="Bowler Name" class="full-input" style="margin-bottom:20px;">
+            <button class="update-btn" style="background:#4caf50; height: 50px;" onclick="confirmNextBowler()">START NEXT OVER</button>
+        </div>
+    </div>
+
     <h2>CRICKET SCORING PRO</h2>
 
     <div class="live-status">
-        <div>
-            <span>Match Score</span>
-            <h3 id="live-total-score">0/0</h3>
-            <small id="live-overs">Ovs: 0.0</small>
-        </div>
-        <div class="striker-highlight">
-            <span>Striker (▶)</span>
-            <h3 id="live-bat1" style="font-size: 18px;">PLAYER 1: 0(0)</h3>
-        </div>
-        <div>
-            <span>Non-Striker</span>
-            <h3 id="live-bat2" style="font-size: 18px;">PLAYER 2: 0(0)</h3>
-        </div>
+        <div><span>Match Score</span><h3 id="live-total-score">0/0</h3><small id="live-overs">Ovs: 0.0</small></div>
+        <div class="striker-highlight"><span>Striker (▶)</span><h3 id="live-bat1" style="font-size: 18px;">P1: 0(0)</h3></div>
+        <div><span>Non-Striker</span><h3 id="live-bat2" style="font-size: 18px;">P2: 0(0)</h3></div>
     </div>
     
     <div class="card">
         <label>Match Setup & Location</label>
-        <div style="display:flex; justify-content:space-between;">
-            <input type="text" id="t1" value="SIDHU CHAK">
-            <input type="text" id="t2" value="FUJIAN WALA">
-        </div>
-        <input type="text" id="matchLoc" class="full-input" value="OKARA">
+        <div style="display:flex; justify-content:space-between;"><input type="text" id="t1" value="TEAM A"><input type="text" id="t2" value="TEAM B"></div>
+        <input type="text" id="matchLoc" class="full-input" value="LOCATION">
         <button class="update-btn" onclick="syncNames()">UPDATE TEAMS & LOCATION</button>
     </div>
 
     <div class="card">
-        <label>Current Action (Bowler: <span id="current-bowl-name" style="color:#00acc1; font-weight:bold;">ANAS</span>)</label>
+        <label>Action Panel (Bowler: <span id="current-bowl-name" style="color:#00acc1;">---</span>)</label>
         <div style="display:flex; justify-content: space-around; margin-bottom:10px;">
-            <input type="text" id="b1" value="ASIF" placeholder="Striker">
-            <input type="text" id="b2" value="AHMAD" placeholder="Non-Striker">
+            <input type="text" id="b1" placeholder="Striker">
+            <input type="text" id="b2" placeholder="Non-Striker">
         </div>
-        <div class="card">
-    <label>Custom Overlay Text (Ticker)</label>
-    <input type="text" id="customText" class="full-input" placeholder="Enter news or message here...">
-    <div style="display:flex; gap:10px; margin-top:10px;">
-        <button class="update-btn" style="background: #4caf50;" onclick="sendText(true)">SHOW TEXT</button>
-        <button class="update-btn" style="background: #f44336;" onclick="sendText(false)">HIDE TEXT</button>
-    </div>
-</div>
-
         
+        <label>Custom Ticker</label>
+        <input type="text" id="customText" class="full-input" placeholder="Message...">
+        <div style="display:flex; gap:10px; margin-top:10px;">
+            <button class="update-btn" style="background: #4caf50;" onclick="sendText(true)">SHOW TEXT</button>
+            <button class="update-btn" style="background: #f44336;" onclick="sendText(false)">HIDE TEXT</button>
+        </div>
+
         <div class="btn-group">
             <button class="run-btn" onclick="processBall(0, 'reg')">0</button>
             <button class="run-btn" onclick="processBall(1, 'reg')">1</button>
@@ -126,204 +131,188 @@
 
     <div class="card">
         <label>Bowlers History</label>
-        <table id="history-table">
-            <thead>
-                <tr><th>Bowler</th><th>Overs</th><th>Runs</th><th>Wkts</th></tr>
-            </thead>
-            <tbody id="history-body"></tbody>
-        </table>
-    </div>
-<div class="card" style="margin-top: 20px; border-top: 4px solid #ff0077; background: #1a1a1a; padding: 15px; border-radius: 10px;">
-    <h3 style="color: #00d9ff; font-size: 16px; margin-bottom: 15px; text-align: center;">LIVE BROADCAST PANEL</h3>
-    
-    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-        <button onclick="activateOverlay(1)" style="flex: 1; background: linear-gradient(to bottom, #2196F3, #1976D2); color: white; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">PLAY V1 </button>
-        <button onclick="activateOverlay(2)" style="flex: 1; background: linear-gradient(to bottom, #E91E63, #C2185B); color: white; padding: 12px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">PLAY V2 </button>
+        <table><thead><tr><th>Bowler</th><th>Overs</th><th>Runs</th><th>Wkts</th></tr></thead><tbody id="history-body"></tbody></table>
     </div>
 
-    <div style="display: flex; gap: 10px;">
-        <button onclick="hideOverlay()" style="flex: 1; background: #444; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">HIDE OVERLAY</button>
-        <button onclick="fullResetMatch()" style="flex: 1; background: #d32f2f; color: white; padding: 10px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;"> RESET MATCH</button>
+    <div class="card" style="border-top: 4px solid #ff0077; background: #1a1a1a;">
+        <h3 style="color: #00d9ff; font-size: 16px; margin-bottom: 15px; text-align: center;">LIVE BROADCAST PANEL</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <button onclick="activateOverlay(1)" style="flex: 1; background: #2196F3; color: white;">PLAY V1</button>
+            <button onclick="activateOverlay(2)" style="flex: 1; background: #E91E63; color: white;">PLAY V2</button>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="hideOverlay()" style="flex: 1; background: #444; color: white;">HIDE OVERLAY</button>
+            <button onclick="fullResetMatch()" style="flex: 1; background: #d32f2f; color: white;">RESET MATCH</button>
+        </div>
     </div>
-</div>
 
     <script>
-        // Game Object aur Functions (Aapke original logic ke sath)
+        // Match ke main variables
         let game = {
-            t1: "FUJIAN WALA", t2: "SIDHU CHAK", totalRuns: 0, wickets: 0, overs: 0, ballsInOver: 0,
-            b1n: "ASIF", b1r: 0, b1b: 0, b2n: "ALI", b2r: 0, b2b: 0,
+            t1: "TEAM A", t2: "TEAM B", totalRuns: 0, wickets: 0, 
+            matchBalls: 0, // Match ki total balls track karne ke liye
+            b1n: "P1", b1r: 0, b1b: 0, b2n: "P2", b2r: 0, b2b: 0,
             location: "OKARA", recentBalls: [],
             bowlName: "ANAS", bowlRuns: 0, bowlWkts: 0, bowlBalls: 0, bowlOvs: "0.0",
-            bowlersDB: { "ANAS": { r:0, w:0, b:0 } }
+            tickerMsg: "", showTicker: false,
+            activeOverlay: 1, showOverlay: false
         };
         
+        // Bowlers ka permanent record (Match ke end tak)
+        let bowlersStats = {}; 
         let history = [];
 
-        function updateLiveDisplay() {
-            document.getElementById('live-total-score').innerText = game.totalRuns + "/" + game.wickets;
-            document.getElementById('live-overs').innerText = "Ovs: " + game.bowlOvs;
-            document.getElementById('live-bat1').innerText = `${game.b1n}: ${game.b1r}(${game.b1b})`;
-            document.getElementById('live-bat2').innerText = `${game.b2n}: ${game.b2r}(${game.b2b})`;
-            document.getElementById('current-bowl-name').innerText = game.bowlName;
-            document.getElementById('b1').value = game.b1n;
-            document.getElementById('b2').value = game.b2n;
-            document.getElementById('t1').value = game.t1;
-            document.getElementById('t2').value = game.t2;
-            document.getElementById('matchLoc').value = game.location;
-        }
-
-        // --- Functions Exposed to Window for Buttons ---
-        window.syncNames = function() {
-            saveHistory();
-            game.t1 = document.getElementById('t1').value;
-            game.t2 = document.getElementById('t2').value;
-            game.location = document.getElementById('matchLoc').value;
-            game.b1n = document.getElementById('b1').value.toUpperCase();
-            game.b2n = document.getElementById('b2').value.toUpperCase();
-            save();
-            updateLiveDisplay();
+        window.save = function() { 
+            if (window.gameRef && window.firebaseSet) { window.firebaseSet(window.gameRef, game); }
         };
 
         window.processBall = function(val, type) {
-            saveHistory();
-            if (type === 'reg') {
-                if (val === 'W') {
-                    game.wickets++; game.bowlWkts++; game.bowlBalls++;
-                    game.recentBalls.push('W');
-                    save();
-                    let next = prompt("New Batsman Name:");
-                    if(next) { game.b1n = next.toUpperCase(); game.b1r = 0; game.b1b = 0; }
-                } else {
-                    game.totalRuns += val; game.b1r += val; game.bowlRuns += val; 
-                    game.bowlBalls++; game.b1b++;
-                    game.recentBalls.push(val);
-                    if (val % 2 !== 0) strikeSwitch();
-                }
-                game.ballsInOver++;
-            } 
-            else if (type === 'wd' || type === 'nb') {
-                game.totalRuns += val; game.bowlRuns += val;
-                game.recentBalls.push(type === 'wd' ? 'Wd' : 'Nb');
-            }
-            else if (type === 'lb' || type === 'by') {
-                game.totalRuns += val; game.bowlBalls++; game.b1b++; game.ballsInOver++;
-                game.recentBalls.push(type === 'lb' ? 'Lb' : 'By');
-                if (val % 2 !== 0) strikeSwitch();
-            }
-            updateBowlStats();
-            updateHistoryTable();
-            updateLiveDisplay();
-            save();
-            if (game.ballsInOver >= 6) setTimeout(handleOverEnd, 500);
-        };
+    saveHistory();
+    
+    // Total Match ki balls ko har ball pe +1 karna hai
+    game.matchBalls++; 
 
-        window.handleOverEnd = function() {
-            game.bowlersDB[game.bowlName] = { r: game.bowlRuns, w: game.bowlWkts, b: game.bowlBalls };
-            let nextBowl = prompt("Over End! Next Bowler Name?", "");
-            if (nextBowl) {
-                nextBowl = nextBowl.toUpperCase();
-                game.bowlName = nextBowl;
-                if (game.bowlersDB[nextBowl]) {
-                    game.bowlRuns = game.bowlersDB[nextBowl].r;
-                    game.bowlWkts = game.bowlersDB[nextBowl].w;
-                    game.bowlBalls = game.bowlersDB[nextBowl].b;
-                } else {
-                    game.bowlRuns = 0; game.bowlWkts = 0; game.bowlBalls = 0;
-                }
-                game.ballsInOver = 0;
-                game.recentBalls = [];
-                strikeSwitch();
-                updateBowlStats();
-                updateHistoryTable();
-                updateLiveDisplay();
-                save();
-            }
-        };
-
-        window.rotateStrike = function() { saveHistory(); strikeSwitch(); updateLiveDisplay(); save(); };
-        window.undoLast = function() { 
-            if(history.length > 0) { 
-                game = JSON.parse(history.pop()); 
-                updateHistoryTable(); updateLiveDisplay(); save(); 
-            } 
-        };
-        window.askExtra = function(type) {
-            let val = prompt(`Runs on this Extra?`, "1");
-            if (val !== null) processBall(parseInt(val), type);
-        };
-
-        function strikeSwitch() {
-            let temp = {n: game.b1n, r: game.b1r, b: game.b1b};
-            game.b1n = game.b2n; game.b1r = game.b2r; game.b1b = game.b2b;
-            game.b2n = temp.n; game.b2r = temp.r; game.b2b = temp.b;
-        }
-
-        function updateBowlStats() { game.bowlOvs = Math.floor(game.bowlBalls / 6) + "." + (game.bowlBalls % 6); }
-        function saveHistory() { history.push(JSON.stringify(game)); if(history.length > 10) history.shift(); }
-
-        window.updateHistoryTable = function() {
-            game.bowlersDB[game.bowlName] = { r: game.bowlRuns, w: game.bowlWkts, b: game.bowlBalls };
-            let html = "";
-            for (let name in game.bowlersDB) {
-                let b = game.bowlersDB[name];
-                let ovs = Math.floor(b.b / 6) + "." + (b.b % 6);
-                html += `<tr><td>${name}</td><td>${ovs}</td><td>${b.r}</td><td>${b.w}</td></tr>`;
-            }
-            document.getElementById('history-body').innerHTML = html;
-        };
-        // Ye function data ko Firebase aur LocalStorage dono jagah bhejega
-window.save = function() { 
-    // Phone memory mein save (Backup)
-    localStorage.setItem('cricketScore', JSON.stringify(game)); 
-
-    // Firebase Online sync
-    if (window.gameRef && window.firebaseSet) {
-        window.firebaseSet(window.gameRef, game);
-        console.log("Data Synced to Firebase!");
+    if (val === 'W') { 
+        game.wickets++; 
+        game.bowlWkts++; 
+        game.bowlBalls++; 
+        game.b1b++;
+        game.recentBalls.push('W');
+    } else { 
+        game.totalRuns += val; 
+        game.b1r += val; 
+        game.bowlRuns += val; 
+        game.bowlBalls++; 
+        game.b1b++; 
+        game.recentBalls.push(val.toString());
+        if (val % 2 !== 0) strikeSwitch(); 
     }
-};
+    
+    updateBowlStats();
+    updateLiveDisplay();
+    updateBowlerHistory(); 
 
-window.sendText = function(show) {
-    const inputField = document.getElementById('customText');
-    if (inputField) {
-        game.tickerMsg = inputField.value.toUpperCase();
-        game.showTicker = show;
-        
-        // Data ko foran save aur send karne ke liye
-        save(); 
-        
-        if(show) {
-            alert("Text Sent: " + game.tickerMsg); // Testing ke liye
-        } else {
-            alert("Ticker Hidden");
-        }
-    } else {
-        console.error("Input field 'customText' hide!");
+    // Auto Over End Check
+    if (game.bowlBalls === 6) {
+        setTimeout(() => {
+            document.getElementById('bowlerModal').style.display = 'flex';
+        }, 500);
     }
-};
-window.activateOverlay = function(v) {
-    game.activeOverlay = v; // 1 ya 2 set karega
-    game.showOverlay = true; 
-    save(); // Firebase mein bhej dega
-    alert("Overlay " + v + " now live.");
-};
-
-window.hideOverlay = function() {
-    game.showOverlay = false;
     save();
 };
 
-window.fullResetMatch = function() {
-    if(confirm("confirm reset?")) {
-        game.totalRuns = 0; game.wickets = 0; game.overs = 0; game.ballsInOver = 0;
-        game.b1r = 0; game.b1b = 0; game.b2r = 0; game.b2b = 0;
-        game.recentBalls = []; game.bowlRuns = 0; game.bowlWkts = 0;
-        game.showOverlay = false;
-        save();
-        location.reload(); // Page refresh takay sab clear ho jaye
-    }
-};
 
+        function updateBowlerHistory() {
+            // Bowler ka data permanent database mein update karein
+            bowlersStats[game.bowlName] = {
+                balls: game.bowlBalls, // Sirf is over ki nahi, total balls
+                runs: game.bowlRuns,
+                wkts: game.bowlWkts
+            };
+
+            const tbody = document.getElementById('history-body');
+            tbody.innerHTML = ""; 
+
+            for (let name in bowlersStats) {
+                let b = bowlersStats[name];
+                // Table mein Overs format (e.g. 1.3) dikhane ke liye
+                let displayOvers = Math.floor(b.balls / 6) + "." + (b.balls % 6);
+                let row = `<tr>
+                    <td>${name}</td>
+                    <td>${displayOvers}</td>
+                    <td>${b.runs}</td>
+                    <td>${b.wkts}</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            }
+        }
+
+        window.confirmNextBowler = function() {
+            let nextName = document.getElementById('nextBowlInput').value.trim().toUpperCase();
+            if(nextName !== "") {
+                // Pehle purane bowler ka data history mein pakka save karein
+                updateBowlerHistory();
+
+                // Naye Bowler ka data check karein (kya isne pehle bowling ki hai?)
+                if (bowlersStats[nextName]) {
+                    game.bowlName = nextName;
+                    game.bowlBalls = bowlersStats[nextName].balls;
+                    game.bowlRuns = bowlersStats[nextName].runs;
+                    game.bowlWkts = bowlersStats[nextName].wkts;
+                } else {
+                    // Agar bilkul naya bowler hai
+                    game.bowlName = nextName;
+                    game.bowlBalls = 0;
+                    game.bowlRuns = 0;
+                    game.bowlWkts = 0;
+                }
+                
+                game.recentBalls = [];
+                strikeSwitch(); 
+                document.getElementById('bowlerModal').style.display = 'none';
+                document.getElementById('nextBowlInput').value = "";
+                
+                save();
+                updateLiveDisplay();
+                updateBowlerHistory(); 
+            } else {
+                alert("Please enter a bowler name!");
+            }
+        };
+
+                function updateLiveDisplay() { 
+            // 1. Poore match ke overs calculate karein (matchBalls se)
+            let totalMatchOvers = Math.floor(game.matchBalls / 6);
+            let totalMatchExtraBalls = game.matchBalls % 6;
+            let displayMatchOvers = totalMatchOvers + "." + totalMatchExtraBalls;
+
+            // 2. Scoreboard ke top panel par TOTAL MATCH OVERS dikhayein
+            document.getElementById('live-total-score').innerText = game.totalRuns + "/" + game.wickets; 
+            document.getElementById('live-overs').innerText = "Ovs: " + displayMatchOvers; 
+            
+            // 3. Current Bowler ka naam aur Batsmen ka score update karein
+            document.getElementById('current-bowl-name').innerText = game.bowlName;
+            document.getElementById('live-bat1').innerText = game.b1n + ": " + game.b1r + "(" + game.b1b + ")";
+            document.getElementById('live-bat2').innerText = game.b2n + ": " + game.b2r + "(" + game.b2b + ")";
+        }
+
+
+        function updateBowlStats() { 
+            // Bowler ke display ke liye (Ye sirf UI ke liye hai)
+            game.bowlOvs = Math.floor(game.bowlBalls / 6) + "." + (game.bowlBalls % 6);
+        }
+
+        // --- Baqi Functions ---
+        window.handleOverEnd = function() { document.getElementById('bowlerModal').style.display = 'flex'; };
+        window.syncNames = function() {
+            game.t1 = document.getElementById('t1').value.toUpperCase();
+            game.t2 = document.getElementById('t2').value.toUpperCase();
+            game.location = document.getElementById('matchLoc').value.toUpperCase();
+            game.b1n = document.getElementById('b1').value.toUpperCase();
+            game.b2n = document.getElementById('b2').value.toUpperCase();
+            save(); updateLiveDisplay();
+        };
+        function strikeSwitch() { 
+            let temp = {n: game.b1n, r: game.b1r, b: game.b1b}; 
+            game.b1n = game.b2n; game.b1r = game.b2r; game.b1b = game.b2b; 
+            game.b2n = temp.n; game.b2r = temp.r; game.b2b = temp.b; 
+        }
+        window.activateOverlay = function(v) { game.activeOverlay = v; game.showOverlay = true; save(); };
+        window.hideOverlay = function() { game.showOverlay = false; save(); };
+        window.sendText = function(show) { game.tickerMsg = document.getElementById('customText').value.toUpperCase(); game.showTicker = show; save(); };
+        window.rotateStrike = function() { strikeSwitch(); save(); updateLiveDisplay(); };
+        window.undoLast = function() { if(history.length > 0) { game = JSON.parse(history.pop()); save(); updateLiveDisplay(); updateBowlerHistory(); } };
+        window.askExtra = function(type) { let val = prompt("Runs?"); if(val) processBall(parseInt(val), type); };
+        function saveHistory() { history.push(JSON.stringify(game)); }
+        window.fullResetMatch = function() {
+            if(confirm("Reset Match?")) {
+                bowlersStats = {}; 
+                game.totalRuns = 0; game.wickets = 0; game.matchBalls = 0; game.bowlBalls = 0;
+                game.b1r = 0; game.b1b = 0; game.b2r = 0; game.b2b = 0;
+                save(); location.reload();
+            }
+        };
     </script>
+
 </body>
 </html>
